@@ -26,12 +26,29 @@ def call_history(method: Callable) -> Callable:
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """decorator wrapper"""
+        """wrapper"""
         self._redis.rpush(inputs, str(args))
         output = method(self, *args, **kwargs)
         self._redis.rpush(outputs, str(output))
         return output
     return wrapper
+
+
+def replay(method: Callable) -> None:
+    """display the history of calls of a particular function"""
+    redis = method.__self__._redis
+    key = method.__qualname__
+    inputs_original = key + ":inputs"
+    outputs_original = key + ":outputs"
+    count = redis.get(key).decode("utf-8")
+    input_list = redis.lrange(inputs_original, 0, -1)
+    output_list = redis.lrange(outputs_original, 0, -1)
+    print("{} was called {} times:".format(key, count))
+    history = list(zip(input_list, output_list))
+    for k, v in history:
+        data_key = k.decode("utf-8")
+        data = v.decode("utf-8")
+        print("{}(*{}) -> {}".format(key, data_key, data))
 
 
 class Cache():
