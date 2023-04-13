@@ -18,11 +18,10 @@ def count_page_access(method):
             return cached_data.decode("utf-8")
 
         key = "count:{}".format(url)
-        html = method(url)
+        content = method(url)
         _redis.incr(key)
-        _redis.set(cache_key, html)
-        _redis.expire(cache_key, 10)
-        return html
+        _redis.set(cache_key, content, ex=10)
+        return content
     return wrapper
 
 
